@@ -41,14 +41,21 @@ typedef struct list_head list_t;
 
 #define MAX_CALL_SLOT   (16 * 1024)
 #define SHACK_SIZE      (16 * 1024)
+#define SHACK_MASK  (SHACK_BUCKET-1)
 
 struct shadow_pair
 {
-    struct list_head l;
     target_ulong guest_eip;
-    unsigned long *shadow_slot;
+    unsigned long *host_eip;
+    struct shadow_pair *nxt;
 };
 
+struct hash_list
+{
+    struct shadow_pair *head[SHACK_BUCKET];
+};
+
+struct shadow_pair* find_hash_pair(CPUState *env, target_ulong next_eip);
 void shack_set_shadow(CPUState *env, target_ulong guest_eip, unsigned long *host_eip);
 inline void insert_unresolved_eip(CPUState *env, target_ulong next_eip, unsigned long *slot);
 unsigned long lookup_shadow_ret_addr(CPUState *env, target_ulong pc);
