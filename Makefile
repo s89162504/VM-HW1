@@ -17,11 +17,10 @@ build:
 
 benchmark: FORCE
 	tar -xf benchmark/automotive.tar.gz -C benchmark
-	$(MAKE) -C benchmark/automotive/make
-	tar -xf benchmark/coremark_v1.0.tgz -C benchmark
-	
+	$(MAKE) -C benchmark all
 
 clean:
 	rm -rf qemu-0.13.0 build.qemu
+	rm -rf benchmark/automotive
 FORCE:
 
