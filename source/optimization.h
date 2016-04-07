@@ -9,13 +9,6 @@
 /* Comment the next line to disable optimizations. */
 #define ENABLE_OPTIMIZATION
 
-/*
- * Link list facilities
- */
-struct list_head {
-    struct list_head *next, *prev;
-};
-typedef struct list_head list_t;
 
 /*
  * Shadow Stack
@@ -39,9 +32,10 @@ typedef struct list_head list_t;
 #define TCGv TCGv_i64
 #endif
 
-#define MAX_CALL_SLOT   (16 * 1024)
 #define SHACK_SIZE      (16 * 1024)
-#define SHACK_MASK  (SHACK_BUCKET-1)
+#define SHACK_BUCKET	(1<<16)
+#define SHACK_MASK 	(SHACK_BUCKET-1)
+
 
 struct shadow_pair
 {
