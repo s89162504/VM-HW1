@@ -11,6 +11,9 @@
 #include "helper.h"
 #include "optimization.h"
 
+#define OPT_SHACK
+#define OPT_IBTC
+
 extern uint8_t *optimization_ret_addr;
 
 /*
@@ -19,9 +22,12 @@ extern uint8_t *optimization_ret_addr;
 
 static inline void shack_init(CPUState *env)
 {
+#ifdef OPT_SHACK
+    fprintf(stderr, "Using Shadow stack\n");
     env->shack = env->shack_top = (void *)malloc(SHACK_SIZE * sizeof(void*));
     env->shack_end = env->shack + SHACK_SIZE*sizeof(void*);
     env->shadow_hash_list = (struct hash_list *)calloc(1, sizeof(struct hash_list));
+#endif
 }
 
 struct shadow_pair* find_hash_pair(CPUState *env, target_ulong next_eip)
@@ -48,8 +54,10 @@ struct shadow_pair* find_hash_pair(CPUState *env, target_ulong next_eip)
  */
 void shack_set_shadow(CPUState *env, target_ulong guest_eip, unsigned long *host_eip)
 {
+#ifdef OPT_SHACK
     struct shadow_pair *pair_ptr = find_hash_pair(env, guest_eip);
     pair_ptr->host_eip = host_eip;
+#endif
 }
 
 /*
@@ -58,7 +66,9 @@ void shack_set_shadow(CPUState *env, target_ulong guest_eip, unsigned long *host
  */
 void helper_shack_flush(CPUState *env)
 {
+#ifdef OPT_SHACK
     env->shack_top = env->shack;
+#endif
 }
 
 /*
@@ -67,6 +77,7 @@ void helper_shack_flush(CPUState *env)
  */
 void push_shack(CPUState *env, TCGv_ptr cpu_env, target_ulong next_eip) //next_eip contains the guest return address
 {
+#ifdef OPT_SHACK
     /* find the corresponding slot */
     struct shadow_pair *pair_ptr = find_hash_pair(env, next_eip);
 
@@ -98,6 +109,7 @@ void push_shack(CPUState *env, TCGv_ptr cpu_env, target_ulong next_eip) //next_e
     /* clean up */
     tcg_temp_free_ptr(tcg_shack_top);
     tcg_temp_free_ptr(tcg_shack_end);
+#endif
 }
 
 /*
@@ -106,6 +118,7 @@ void push_shack(CPUState *env, TCGv_ptr cpu_env, target_ulong next_eip) //next_e
  */
 void pop_shack(TCGv_ptr cpu_env, TCGv next_eip)
 {
+#ifdef OPT_SHACK
     /* declare variables */
     int lab_end = gen_new_label();
     TCGv tcg_next_eip = tcg_temp_local_new();
@@ -149,6 +162,7 @@ void pop_shack(TCGv_ptr cpu_env, TCGv next_eip)
     tcg_temp_free_ptr(tcg_top_host_eip);
     tcg_temp_free(tcg_top_guest_eip);
     tcg_temp_free(tcg_next_eip);
+#endif
 }
 
 /*
@@ -165,12 +179,14 @@ target_ulong saved_eip;
  */
 void *helper_lookup_ibtc(target_ulong guest_eip)
 {
+#ifdef OPT_IBTC
     int key = guest_eip & IBTC_CACHE_MASK;
     if(ibtc->htable[key].guest_eip == guest_eip)
         return (void*)ibtc->htable[key].tb->tc_ptr;
 
     saved_eip = guest_eip;
     update_ibtc = 1;
+#endif
     return optimization_ret_addr;
 }
 
@@ -180,10 +196,12 @@ void *helper_lookup_ibtc(target_ulong guest_eip)
  */
 void update_ibtc_entry(TranslationBlock *tb)
 {
+#ifdef OPT_IBTC
     int key = saved_eip & IBTC_CACHE_MASK;
     ibtc->htable[key].guest_eip = saved_eip;
     ibtc->htable[key].tb = tb;
     update_ibtc = 0;
+#endif
 }
 
 /*
@@ -192,8 +210,11 @@ void update_ibtc_entry(TranslationBlock *tb)
  */
 static inline void ibtc_init(CPUState *env)
 {
+#ifdef OPT_IBTC
+    fprintf(stderr, "Using IBTC\n");
     ibtc = (struct ibtc_table *) calloc(1, sizeof(struct ibtc_table));
     update_ibtc = 0;
+#endif
 }
 
 /*
