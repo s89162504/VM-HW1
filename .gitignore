@@ -1,1 +1,4 @@
 00-local/*
+report/*.aux
+report/*.log
+report/*.out
