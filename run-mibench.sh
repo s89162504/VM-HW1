@@ -4,10 +4,10 @@ QEMU_PATH="./build.qemu/i386-linux-user/qemu-i386";
 BENCHMARK_PATH="./benchmark/automotive";
 
 testcase=( \
+    "susan/susan $BENCHMARK_PATH/susan/input_large.pgm /dev/null -s " \
     "basicmath/basicmath_large" \
     "bitcount/bitcnts 10000000" \
     "qsort/qsort_large $BENCHMARK_PATH/qsort/input_large.dat" \
-    "susan/susan $BENCHMARK_PATH/susan/input_large.pgm /dev/null -s"
 );
 
 
