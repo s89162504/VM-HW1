@@ -5,6 +5,8 @@
 \usepackage[procnames]{listings}
 \usepackage{lstautogobble, color}
 \usepackage{amsmath, amsfonts, amssymb}
+\usepackage{multirow}
+\usepackage[table,xcdraw]{xcolor}
 \usepackage{fontspec}   %加這個就可以設定字體
 \usepackage{xeCJK}       %讓中英文字體分開設置
 \setCJKmainfont{標楷體} %設定中文為系統上的字型，而英文不去更動，使用原TeX字型
@@ -41,6 +43,18 @@
     autogobble=true
 }
 
+\lstdefinestyle{Shell}
+{
+    language=bash,
+    basicstyle=\ttfamily,
+    numbers=none,
+    frame=single,
+    breaklines=true,
+    tabsize=4,
+    escapeinside={(*}{*)},
+    autogobble=true
+}
+
 \title{\textbf{Virtual Machine - Assignment 1}}
 
 \author{R04922058 鄭以琳}
@@ -60,7 +74,7 @@
             struct hash_list *shadow_hash_list;
         \end{lstlisting}
         
-        Variables \verb|shack|, \verb|shacks_top| and \verb|shack_end| are the same as which defined in homework guidlines.
+        Variables \verb|shack|, \verb|shacks_top| and \verb|shack_end| are the same as which defined in homework guidelines.
         However, I modified \verb|hash_list|.
         It now contains several buckets, each pointing to the head of a \verb|shadow_pair| chain.
         \\
@@ -93,7 +107,7 @@
         \begin{lstlisting}[style=Function]
             void (*\textbf{\textcolor{blue}{shack\_init}}*)(CPUState *env)
         \end{lstlisting}
-        In this funcion, shadow stack and hash list are initialized.
+        In this function, shadow stack and hash list are initialized.
         \\\\
         % find_hash_pair
         \begin{lstlisting}[style=Function] 
@@ -112,7 +126,7 @@
         \begin{lstlisting}[style=Function] 
             void (*\textbf{\textcolor{blue}{shack\_set\_shadow}}*)(CPUState *env, target_ulong guest_eip, unsigned long *host_eip)
         \end{lstlisting}
-        When a new trasnlation block is created, this function will be called.
+        When a new translation block is created, this function will be called.
         It uses \verb|find_hash_pair()| to retrieve the \verb|shadow_pair| corresponding to \verb|guest_eip|, 
         and update \verb|host_eip| in the \verb|shadow_pair|.
         \\\\
@@ -126,7 +140,7 @@
         \begin{lstlisting}[style=Function] 
             void (*\textbf{\textcolor{blue}{push\_shack}}*)(CPUState *env, TCGv_ptr cpu_env, target_ulong next_eip)
         \end{lstlisting}
-        The push operation contains serveral steps.
+        The push operation contains several steps.
         \begin{enumerate}
             \item Get the corresponding \verb|shadow_pair|. \\
                 Call \verb|find_hash_pair()| to retrieve the \verb|shadow_pair| that contains \verb|next_eip|.
@@ -139,7 +153,7 @@
                 Flushing simply sets \verb|shack_top| to \verb|shack|.
 
             \item Push the address of \verb|shadow_piar| onto the stack. \\
-                The address of \verb|shadow_pair| retrieved in the first step will be pushed onto the statck.
+                The address of \verb|shadow_pair| retrieved in the first step will be pushed onto the stack.
         \end{enumerate}
 
         \newpage
@@ -148,21 +162,21 @@
         \begin{lstlisting}[style=Function] 
             void (*\textbf{\textcolor{blue}{pop\_shack}}*)(TCGv_ptr cpu_env, TCGv next_eip)
         \end{lstlisting}
-        The pop operation contains serveral steps.
+        The pop operation contains several steps.
         \begin{enumerate}
             \item Check if the stack is empty. \\
-                If \verb|shack_top| equals to \verb|shack|, the statck is empty and no other operations need to be performed.
+                If \verb|shack_top| equals to \verb|shack|, the stack is empty and no other operations need to be performed.
 
             \item Check if the guest address of the top entry matches \verb|next_eip|.  \\
                 If the \verb|shadow_pair| on top of the shack contains the \verb|guest_eip| same as \verb|next_eip|,
-                go to the next step; else no other operations need to be performed.
+                go to the next step; otherwise no other operations need to be performed.
 
             \item Check if the host address of the top entry is valid. \\
                 If the \verb|shadow_pair| contains a valid host address (not \verb|NULL|),
-                go to the next step; else no other operations need to be performed.
+                go to the next step; otherwise no other operations need to be performed.
 
             \item Update return address. \\
-                Update the return address by modifying \verb|gen_opc_ptr| as stated in homework guildlines.
+                Update the return address by modifying \verb|gen_opc_ptr| as stated in homework guildelines.
         \end{enumerate}
 
 
@@ -200,7 +214,7 @@
         \begin{lstlisting}[style=Function]
             void (*\textbf{\textcolor{blue}{ibtc\_init}}*)(CPUState *env)
         \end{lstlisting}
-        In this funcion, \verb|ibtc_table| is initialized.
+        In this function, \verb|ibtc_table| is initialized.
         \\\\
         % helper_lookup_ibtc
         \begin{lstlisting}[style=Function]
@@ -231,14 +245,69 @@
         \end{itemize}
 
     \subsection{MiBench}
-        % Without optimization, ibtc, shadow stack, both
-        % basicmath, ..., ..., susan
-        % time, speedup
+        MiBench provides several benchmarks. I chose \verb|automotive| to run the experiments.
+        There are $4$ programs in \verb|automotive| benchmark.
+        I ran each program five times and calculated the average runtime and speedup.
+        ~\\
+        The commands used are:
+        \begin{lstlisting}[style=Shell]
+            > qemu-i386 $BM_PATH/basicmath_large 1>/dev/null
+            
+            > qemu-i386 $BM_PATH/bitcnts 10000000 1>/dev/null
+            
+            > qemu-i386 $BM_PATH/qsort_large $BM_PATH/input_large.dat 1>/dev/null
+            
+            > qemu-i386 $BM_PATH/susan $BM_PATH/input_large.pgm /dev/null -s
+              1>/dev/null
+        \end{lstlisting}
+        ~\\
+        The results are shown below.
+        %resutl table
+        \begin{table}[h!]
+            \centering
+            \caption{MiBench - automotive}
+            \label{my-label}
+            \begin{tabular}{|c|c|c|c|c|c|c|c|}
+                \hline
+                & \textbf{Without OPT} & \multicolumn{2}{c|}{\textbf{With IBTC}} & \multicolumn{2}{c|}{\textbf{With shadow stack}} & \multicolumn{2}{c|}{{\color[HTML]{FE0000} \textbf{With Both OPT}}}                   \\ \cline{2-8} 
+                \multirow{-2}{*}{\textbf{}} & Runtime(s)           & Runtime(s)           & Speedup          & Runtime(s)               & Speedup              & {\color[HTML]{FE0000} \textbf{Runtime(s)}} & {\color[HTML]{FE0000} \textbf{Speedup}} \\ \hline
+                \textbf{basicmath}          & 4.116                & 3.9948               & 1.03             & 3.3972                   & 1.21                 & {\color[HTML]{FE0000} \textbf{3.3862}}     & {\color[HTML]{FE0000} \textbf{1.22}}    \\ \hline
+                \textbf{bitcount}           & 6.4718               & 4.3346               & 1.49             & 4.536                    & 1.43                 & {\color[HTML]{FE0000} \textbf{2.8492}}     & {\color[HTML]{FE0000} \textbf{2.27}}    \\ \hline
+                \textbf{qsort}              & 0.7048               & 0.7172               & 0.98             & 0.6648                   & 1.06                 & {\color[HTML]{FE0000} \textbf{0.6366}}     & {\color[HTML]{FE0000} \textbf{1.11}}    \\ \hline
+                \textbf{susan}              & 0..3236              & 0.4104               & 0.78             & 0.3912                   & 0.83                 & {\color[HTML]{FE0000} \textbf{0.3776}}     & {\color[HTML]{FE0000} \textbf{0.86}}    \\ \hline
+            \end{tabular}
+        \end{table}
+        
 
-    \subsection{MiBench}
-        % Without optimization, ibtc, shadow stack, both
-        % basicmath, ..., ..., susan
+    \subsection{CoreMark}
+        I downloaded \verb|CoreMark_v1.0| to do the experiments.
+        It provides a single test program.
+        I ran it with two sets of different parameters suggested by its Readme file.
+
+        \begin{lstlisting}[style=Shell]
+            > qemu-i386 $BM_PATH/coremark.exe 0 0 0x66 0 7 1 2000
+            
+            > qemu-i386 $BM_PATH/coremark.exe 0x3415 0x3415 0x66 0 7 1 2000
+        \end{lstlisting}
+        ~\\
+        Each set of parameters is ran three times and the average runtime with their speedup are listed below.
+        %result table
+        \begin{table}[h!]
+            \centering
+            \caption{CoreMark}
+            \label{my-label}
+            \begin{tabular}{|c|c|c|c|c|c|c|c|}
+                \hline
+                & \textbf{Without OPT} & \multicolumn{2}{c|}{\textbf{With IBTC}} & \multicolumn{2}{c|}{\textbf{With shadow stack}} & \multicolumn{2}{c|}{{\color[HTML]{FE0000} \textbf{With Both OPT}}}                   \\ \cline{2-8} 
+                \multirow{-2}{*}{\textbf{}} & Runtime(s)           & Runtime(s)           & Speedup          & Runtime(s)               & Speedup              & {\color[HTML]{FE0000} \textbf{Runtime(s)}} & {\color[HTML]{FE0000} \textbf{Speedup}} \\ \hline
+                \textbf{Test case 1}         & 15.13                & 12.89                & 1.17             & 14.40                    & 1.05                 & {\color[HTML]{FE0000} \textbf{12.18}}      & {\color[HTML]{FE0000} \textbf{1.24}}    \\ \hline
+                \textbf{Test case 2}         & 15.3                 & 13.06                & 1.17             & 14.33                    & 1.07                 & {\color[HTML]{FE0000} \textbf{12.17}}      & {\color[HTML]{FE0000} \textbf{1.26}}    \\ \hline
+            \end{tabular}
+        \end{table} 
     
-
+    \subsection{Discussion}
+        In most of the cases, implementing IBTC and shadow stack leads to better performance.
+        However, since both optimizations are designed for indirect branch handling,
+        the effectiveness is not so obvious if the test case only contains a few such branches.
  
 \end{document}
